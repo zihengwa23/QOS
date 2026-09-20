@@ -1,0 +1,134 @@
+{
+  "platform": "IBM Quantum Cloud (emulated)",
+  "target_backends": [
+    {
+      "name": "ibm_stable_backend",
+      "queue_capacity": 8,
+      "queue_delay_base_s": 1.2,
+      "compile_factor": 0.085,
+      "exec_rate": 3400.0,
+      "failure_rate": 0.045,
+      "cost_per_second": 0.42,
+      "congestion_sensitivity": 0.06,
+      "calibration_windows": [
+        {
+          "start_hour": 2,
+          "end_hour": 4
+        }
+      ]
+    },
+    {
+      "name": "ibm_high_load_backend",
+      "queue_capacity": 5,
+      "queue_delay_base_s": 2.4,
+      "compile_factor": 0.078,
+      "exec_rate": 3600.0,
+      "failure_rate": 0.07,
+      "cost_per_second": 0.38,
+      "congestion_sensitivity": 0.11,
+      "calibration_windows": [
+        {
+          "start_hour": 10,
+          "end_hour": 12
+        }
+      ]
+    }
+  ],
+  "workload_mix": {
+    "short_burst": 24,
+    "mixed_scale": 18,
+    "long_batch": 12
+  },
+  "metric_definitions": {
+    "throughput_jobs_per_s": "completed_jobs / makespan",
+    "avg_queue_wait_s": "average queue waiting time",
+    "success_rate": "successful_jobs / total_jobs",
+    "makespan_s": "max backend finish time",
+    "retry_count": "total retry attempts",
+    "resource_utilization": "total_execute_time / (makespan * backend_count)",
+    "total_cost": "sum((compile_time + execute_time) * backend_cost_rate)"
+  },
+  "ab_setup": {
+    "strategies": [
+      "default",
+      "qos"
+    ],
+    "time_slots": [
+      3,
+      11,
+      19
+    ],
+    "rounds_per_slot": 3
+  },
+  "results": {
+    "default": {
+      "total_jobs": 54.0,
+      "success_jobs": 13.222222222222221,
+      "success_rate": 0.2448559670781893,
+      "avg_queue_wait_s": 3178.327482844312,
+      "avg_compile_s": 2.2873191108293063,
+      "avg_execute_s": 182.90823815855714,
+      "avg_return_s": 0.29734800280203527,
+      "retry_count": 129.22222222222223,
+      "total_cost": 11497.544733296021,
+      "makespan_s": 14518.092158571739,
+      "throughput_jobs_per_s": 0.0037223744166604536,
+      "resource_utilization": 0.34040948690919204
+    },
+    "qos": {
+      "total_jobs": 54.0,
+      "success_jobs": 12.222222222222221,
+      "success_rate": 0.22633744855967075,
+      "avg_queue_wait_s": 3163.9394969071623,
+      "avg_compile_s": 2.26635920888013,
+      "avg_execute_s": 184.4475131675077,
+      "avg_return_s": 0.30538724944410567,
+      "retry_count": 134.55555555555554,
+      "total_cost": 11336.059080444098,
+      "makespan_s": 14357.971276893795,
+      "throughput_jobs_per_s": 0.003763951157678921,
+      "resource_utilization": 0.34710524366313034
+    }
+  },
+  "comparison": {
+    "throughput_gain_pct": 1.1169414025730395,
+    "queue_wait_reduction_pct": 0.45269047997135975,
+    "success_rate_gain_pct": -7.563025210084044,
+    "makespan_reduction_pct": 1.102905808346211,
+    "cost_reduction_pct": 1.404522935964518,
+    "retry_reduction_pct": -4.127257093723115,
+    "resource_utilization_gain_pct": 1.9669712541602768
+  },
+  "optimization_checklist": [
+    {
+      "area": "排队侧",
+      "recommendation": "增强按实时拥塞动态分流，避免单后端堆积",
+      "expected_impact": "高",
+      "complexity": "中"
+    },
+    {
+      "area": "成本侧",
+      "recommendation": "引入成本-时延联合优化目标并动态调权",
+      "expected_impact": "中",
+      "complexity": "中"
+    },
+    {
+      "area": "可靠性侧",
+      "recommendation": "把校准窗口与历史错误率纳入调度惩罚项",
+      "expected_impact": "高",
+      "complexity": "低"
+    },
+    {
+      "area": "调度侧",
+      "recommendation": "加入作业时长预测与截止期优先级，降低长尾等待",
+      "expected_impact": "高",
+      "complexity": "中"
+    },
+    {
+      "area": "编译侧",
+      "recommendation": "复用相同/相近电路编译结果，降低重复编译开销",
+      "expected_impact": "中",
+      "complexity": "低"
+    }
+  ]
+}

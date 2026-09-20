@@ -64,7 +64,10 @@ class QuantumPipelineSimulator:
                 return_s = rng.uniform(0.1, 0.5)
                 total_s = queue_wait + compile_s + execute_s + return_s
 
-                queue_pressure = queue_wait / max(backend.queue_capacity, 1)
+                queue_pressure = queue_wait / max(
+                    backend.queue_delay_base_s * backend.queue_capacity,
+                    1.0,
+                )
                 fail_prob = backend.failure_rate + backend.congestion_sensitivity * queue_pressure
                 if _in_calibration_window(hour_slot, backend):
                     fail_prob += 0.08
@@ -123,4 +126,3 @@ class QuantumPipelineSimulator:
             ),
         }
         return results, summary
-
