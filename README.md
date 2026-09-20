@@ -53,3 +53,23 @@ python /home/runner/work/QOS/QOS/run_experiment.py \
 
 当前版本是**可执行验证框架**，默认以仿真方式复现真机云平台调度链路。  
 后续接入真实 IBM 后端时，可保留同一套指标、负载与 A/B 方法进行真实场景验证。
+
+## 兼容：原型调度器
+
+仓库仍保留原型批处理调度器：
+
+- `/home/runner/work/QOS/QOS/qos_scheduler.py`
+- `/home/runner/work/QOS/QOS/tests/test_qos_scheduler.py`
+
+运行示例：
+
+```bash
+python /home/runner/work/QOS/QOS/qos_scheduler.py
+```
+
+运行测试：
+
+```bash
+cd /home/runner/work/QOS/QOS
+python -m unittest -q
+```
