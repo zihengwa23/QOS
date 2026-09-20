@@ -1,0 +1,112 @@
+{
+  "seed": 42,
+  "platform": {
+    "name": "IBM Quantum Cloud (emulated)",
+    "max_retries": 2,
+    "backends": [
+      {
+        "name": "ibm_stable_backend",
+        "queue_capacity": 8,
+        "queue_delay_base_s": 1.2,
+        "compile_factor": 0.085,
+        "exec_rate": 3400.0,
+        "failure_rate": 0.045,
+        "cost_per_second": 0.42,
+        "congestion_sensitivity": 0.06,
+        "calibration_windows": [
+          {
+            "start_hour": 2,
+            "end_hour": 4
+          }
+        ]
+      },
+      {
+        "name": "ibm_high_load_backend",
+        "queue_capacity": 5,
+        "queue_delay_base_s": 2.4,
+        "compile_factor": 0.078,
+        "exec_rate": 3600.0,
+        "failure_rate": 0.07,
+        "cost_per_second": 0.38,
+        "congestion_sensitivity": 0.11,
+        "calibration_windows": [
+          {
+            "start_hour": 10,
+            "end_hour": 12
+          }
+        ]
+      }
+    ]
+  },
+  "workloads": [
+    {
+      "type": "short_burst",
+      "count": 24,
+      "spec": {
+        "qubits_min": 2,
+        "qubits_max": 8,
+        "depth_min": 30,
+        "depth_max": 120,
+        "shots_min": 512,
+        "shots_max": 2048,
+        "deadline_s": 40
+      }
+    },
+    {
+      "type": "mixed_scale",
+      "count": 18,
+      "spec": {
+        "qubits_min": 6,
+        "qubits_max": 20,
+        "depth_min": 80,
+        "depth_max": 260,
+        "shots_min": 1024,
+        "shots_max": 4096,
+        "deadline_s": 120
+      }
+    },
+    {
+      "type": "long_batch",
+      "count": 12,
+      "spec": {
+        "qubits_min": 16,
+        "qubits_max": 32,
+        "depth_min": 220,
+        "depth_max": 520,
+        "shots_min": 2048,
+        "shots_max": 8192,
+        "deadline_s": 260
+      }
+    }
+  ],
+  "ab_test": {
+    "strategies": [
+      "default",
+      "qos"
+    ],
+    "time_slots": [
+      3,
+      11,
+      19
+    ],
+    "rounds_per_slot": 3
+  },
+  "policy": {
+    "latency_weight": 0.45,
+    "reliability_weight": 0.3,
+    "cost_weight": 0.15,
+    "deadline_weight": 0.05,
+    "congestion_weight": 0.05,
+    "compile_reuse_factor": 0.5
+  },
+  "metric_definitions": {
+    "throughput_jobs_per_s": "completed_jobs / makespan",
+    "avg_queue_wait_s": "average queue waiting time",
+    "success_rate": "successful_jobs / total_jobs",
+    "makespan_s": "max backend finish time",
+    "retry_count": "total retry attempts",
+    "resource_utilization": "total_execute_time / (makespan * backend_count)",
+    "total_cost": "sum((compile_time + execute_time) * backend_cost_rate)"
+  }
+}
+
