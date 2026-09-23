@@ -1,7 +1,8 @@
 # QOS A/B 对照实验报告
 
-- 平台: IBM Quantum Cloud (emulated)
-- 目标后端: ibm_stable_backend, ibm_high_load_backend
+- 平台: Fusion Lab (simulated batch runtime)
+- 工具链: QLLVM + MPI-Q + Fusion Lab
+- 目标后端: fusionlab_stable_runtime, fusionlab_high_load_runtime
 - 负载分布: {'short_burst': 24, 'mixed_scale': 18, 'long_batch': 12}
 - A/B 设置: {'strategies': ['default', 'qos'], 'time_slots': [3, 11, 19], 'rounds_per_slot': 3}
 

@@ -1,11 +1,16 @@
 {
   "seed": 42,
+  "toolchain": {
+    "compiler": "QLLVM",
+    "communication": "MPI-Q",
+    "platform": "Fusion Lab"
+  },
   "platform": {
-    "name": "IBM Quantum Cloud (emulated)",
+    "name": "Fusion Lab (simulated batch runtime)",
     "max_retries": 2,
     "backends": [
       {
-        "name": "ibm_stable_backend",
+        "name": "fusionlab_stable_runtime",
         "queue_capacity": 8,
         "queue_delay_base_s": 1.2,
         "compile_factor": 0.085,
@@ -21,7 +26,7 @@
         ]
       },
       {
-        "name": "ibm_high_load_backend",
+        "name": "fusionlab_high_load_runtime",
         "queue_capacity": 5,
         "queue_delay_base_s": 2.4,
         "compile_factor": 0.078,
@@ -109,4 +114,3 @@
     "total_cost": "sum((compile_time + execute_time) * backend_cost_rate)"
   }
 }
-

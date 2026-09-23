@@ -65,6 +65,7 @@ def run_experiment(config: Dict) -> Dict:
 
     return {
         "platform": config["platform"]["name"],
+        "toolchain": config.get("toolchain", {}),
         "target_backends": [asdict(b) for b in backends],
         "workload_mix": by_type,
         "metric_definitions": config["metric_definitions"],

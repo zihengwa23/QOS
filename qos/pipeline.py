@@ -3,21 +3,28 @@ from __future__ import annotations
 import random
 from typing import Dict, List, Tuple
 
+from .communication import MPIQCommunicator
+from .compiler import QLLVMCompiler
+from .executor import FusionLabExecutor
 from .models import BackendProfile, Job, JobResult
 
 
-def _in_calibration_window(hour: int, backend: BackendProfile) -> bool:
-    for window in backend.calibration_windows:
-        if int(window["start_hour"]) <= hour < int(window["end_hour"]):
-            return True
-    return False
-
-
 class QuantumPipelineSimulator:
-    def __init__(self, backends: List[BackendProfile], max_retries: int, reuse_factor: float) -> None:
+    def __init__(
+        self,
+        backends: List[BackendProfile],
+        max_retries: int,
+        reuse_factor: float,
+        compiler: QLLVMCompiler | None = None,
+        communicator: MPIQCommunicator | None = None,
+        executor: FusionLabExecutor | None = None,
+    ) -> None:
         self.backends = backends
         self.max_retries = max_retries
         self.reuse_factor = reuse_factor
+        self.compiler = compiler or QLLVMCompiler(reuse_factor)
+        self.communicator = communicator or MPIQCommunicator()
+        self.executor = executor or FusionLabExecutor()
 
     def run(
         self,
@@ -47,37 +54,21 @@ class QuantumPipelineSimulator:
             final_result: JobResult | None = None
             while retries <= self.max_retries:
                 backend = scheduler.choose_backend(job, self.backends, state, policy)
-                available_at = state[f"{backend.name}:available_at"]
-                queue_wait = max(0.0, available_at - state["time_cursor"])
-                queue_noise = rng.uniform(0.0, backend.queue_delay_base_s)
-                queue_wait += queue_noise
-
-                compile_key = (job.qubits, round(job.depth, -1), backend.name)
-                compile_s = backend.compile_factor * ((job.qubits * job.depth) ** 0.5)
-                if compile_key in compile_cache:
-                    compile_s *= self.reuse_factor
-                compile_cache.add(compile_key)
-                compile_s *= rng.uniform(0.95, 1.05)
-
-                execute_s = (job.depth * job.shots) / backend.exec_rate
-                execute_s *= rng.uniform(0.95, 1.1)
-                return_s = rng.uniform(0.1, 0.5)
+                communication = self.communicator.prepare(backend, state, rng)
+                compilation = self.compiler.compile(job, backend, compile_cache, rng)
+                execution = self.executor.execute(job, backend, communication.queue_pressure, hour_slot, rng)
+                queue_wait = communication.queue_wait_s
+                compile_s = compilation.compile_s
+                execute_s = execution.execute_s
+                return_s = communication.return_s
                 total_s = queue_wait + compile_s + execute_s + return_s
 
-                queue_pressure = queue_wait / max(
-                    backend.queue_delay_base_s * backend.queue_capacity,
-                    1.0,
-                )
-                fail_prob = backend.failure_rate + backend.congestion_sensitivity * queue_pressure
-                if _in_calibration_window(hour_slot, backend):
-                    fail_prob += 0.08
-                fail_prob = min(0.95, max(0.0, fail_prob))
-                success = rng.random() >= fail_prob
+                success = execution.success
 
                 backend_finish = state["time_cursor"] + total_s
                 state[f"{backend.name}:available_at"] = max(state[f"{backend.name}:available_at"], backend_finish)
 
-                cost = (compile_s + execute_s) * backend.cost_per_second
+                cost = compilation.compile_s * backend.cost_per_second + execution.cost
                 total_cost += cost
 
                 final_result = JobResult(

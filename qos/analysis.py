@@ -71,29 +71,39 @@ def render_markdown_report(result: Dict, checklist: List[Dict[str, str]]) -> str
     default = result["results"]["default"]
     qos = result["results"]["qos"]
     cmp = result["comparison"]
+    toolchain = result.get("toolchain") or {}
+    toolchain_name = " + ".join(
+        part for part in [toolchain.get("compiler"), toolchain.get("communication"), toolchain.get("platform")] if part
+    )
 
     lines = [
         "# QOS A/B 对照实验报告",
         "",
         f"- 平台: {result['platform']}",
-        f"- 目标后端: {', '.join(b['name'] for b in result['target_backends'])}",
-        f"- 负载分布: {result['workload_mix']}",
-        f"- A/B 设置: {result['ab_setup']}",
-        "",
-        "## 核心指标（均值）",
-        "",
-        "| 指标 | Default | QOS | 变化 |",
-        "|---|---:|---:|---:|",
-        f"| Throughput (jobs/s) | {default['throughput_jobs_per_s']:.4f} | {qos['throughput_jobs_per_s']:.4f} | {cmp['throughput_gain_pct']:.2f}% |",
-        f"| Avg Queue Wait (s) | {default['avg_queue_wait_s']:.4f} | {qos['avg_queue_wait_s']:.4f} | {cmp['queue_wait_reduction_pct']:.2f}% (reduction) |",
-        f"| Success Rate | {default['success_rate']:.4f} | {qos['success_rate']:.4f} | {cmp['success_rate_gain_pct']:.2f}% |",
-        f"| Makespan (s) | {default['makespan_s']:.4f} | {qos['makespan_s']:.4f} | {cmp['makespan_reduction_pct']:.2f}% (reduction) |",
-        f"| Retry Count | {default['retry_count']:.2f} | {qos['retry_count']:.2f} | {cmp['retry_reduction_pct']:.2f}% (reduction) |",
-        f"| Resource Utilization | {default['resource_utilization']:.4f} | {qos['resource_utilization']:.4f} | {cmp['resource_utilization_gain_pct']:.2f}% |",
-        f"| Total Cost | {default['total_cost']:.4f} | {qos['total_cost']:.4f} | {cmp['cost_reduction_pct']:.2f}% (reduction) |",
-        "",
-        "## 优化清单（按建议顺序）",
     ]
+    if toolchain_name:
+        lines.append(f"- 工具链: {toolchain_name}")
+    lines.extend(
+        [
+            f"- 目标后端: {', '.join(b['name'] for b in result['target_backends'])}",
+            f"- 负载分布: {result['workload_mix']}",
+            f"- A/B 设置: {result['ab_setup']}",
+            "",
+            "## 核心指标（均值）",
+            "",
+            "| 指标 | Default | QOS | 变化 |",
+            "|---|---:|---:|---:|",
+            f"| Throughput (jobs/s) | {default['throughput_jobs_per_s']:.4f} | {qos['throughput_jobs_per_s']:.4f} | {cmp['throughput_gain_pct']:.2f}% |",
+            f"| Avg Queue Wait (s) | {default['avg_queue_wait_s']:.4f} | {qos['avg_queue_wait_s']:.4f} | {cmp['queue_wait_reduction_pct']:.2f}% (reduction) |",
+            f"| Success Rate | {default['success_rate']:.4f} | {qos['success_rate']:.4f} | {cmp['success_rate_gain_pct']:.2f}% |",
+            f"| Makespan (s) | {default['makespan_s']:.4f} | {qos['makespan_s']:.4f} | {cmp['makespan_reduction_pct']:.2f}% (reduction) |",
+            f"| Retry Count | {default['retry_count']:.2f} | {qos['retry_count']:.2f} | {cmp['retry_reduction_pct']:.2f}% (reduction) |",
+            f"| Resource Utilization | {default['resource_utilization']:.4f} | {qos['resource_utilization']:.4f} | {cmp['resource_utilization_gain_pct']:.2f}% |",
+            f"| Total Cost | {default['total_cost']:.4f} | {qos['total_cost']:.4f} | {cmp['cost_reduction_pct']:.2f}% (reduction) |",
+            "",
+            "## 优化清单（按建议顺序）",
+        ]
+    )
     for item in checklist:
         lines.append(
             f"- [{item['expected_impact']}/{item['complexity']}] {item['area']}：{item['recommendation']}"
