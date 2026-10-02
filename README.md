@@ -18,6 +18,104 @@
 - 执行层：[qos/executor.py](qos/executor.py) 负责执行时长、失败概率和成本
 - 编排层：[qos/pipeline.py](qos/pipeline.py) 负责把三层串起来并汇总指标
 
+## 真实工具链运行
+
+默认配置使用 `runtime.mode = simulated`，不会访问外部工具。切换到真实运行时，需要在配置中提供：
+
+```json
+{
+   "runtime": {
+      "mode": "real",
+      "qllvm": {
+         "command": "qllvm",
+         "target_backend": "qasm-backend",
+         "opt_level": 1
+      },
+      "mpiq": {
+         "prepare_command": "mpirun -np 2 ./path/to/mpi_q_runner --program {program} --job {job_id} --shots {shots}",
+         "timeout_s": 300
+      },
+      "fusion_lab": {
+         "submit_url": "https://your-fusion-lab-api.example/jobs",
+         "token": "",
+         "timeout_s": 600
+      }
+   }
+}
+```
+
+真实作业的 workload spec 还需要提供 `program_path`，指向 OpenQASM 文件。QLLVM 适配器会调用 `qllvm <program> -qrt nisq -qpu ...` 生成编译产物；MPI-Q 适配器会执行配置的 MPI-Q runner；Fusion Lab 适配器会向配置的 HTTP endpoint 提交编译产物路径和作业参数。
+
+由于 Fusion Lab 登录页没有公开 REST API 文档，`submit_url` 和返回 JSON 字段需要按老师/平台管理员提供的实际接口调整。目前适配器支持 `success`、`status`、`execute_s` 和 `cost` 字段，未配置真实端点时会明确报错，不会伪装成真实执行。
+
+可复制 [configs/real_toolchain.example.json](configs/real_toolchain.example.json) 作为真实运行配置模板。运行前需要确认本机有 `qllvm`、`mpirun` 和一个链接 MPI-Q 库的 runner；当前环境尚未安装这两个命令，因此这里只完成了适配器和调用契约，尚未进行真实硬件端到端运行。
+
+### 真实环境准备步骤
+
+1. 安装本地构建依赖（Ubuntu/Debian 示例）：
+
+   ```bash
+   sudo apt update
+    sudo apt install -y build-essential cmake ninja-build mpich libmpich-dev \
+       libeigen3-dev libantlr4-runtime-dev libcurl4-openssl-dev \
+       libedit-dev libzstd-dev python3-dev
+   ```
+
+    在 Debian 12 上还需要安装 LLVM/MLIR 开发包，否则会出现 `Could not find MLIRConfig.cmake`：
+
+    ```bash
+    sudo apt install -y llvm-19-dev libmlir-19-dev llvm-19-tools clang-19 lld-19
+    ```
+
+2. 编译安装 QLLVM：
+
+   ```bash
+   git clone https://gitee.com/QCFlow/QLLVM.git /tmp/QLLVM
+   cd /tmp/QLLVM
+    cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+       -DMLIR_DIR=/usr/lib/llvm-19/lib/cmake/mlir \
+       -DLLVM_ROOT=/usr/lib/llvm-19
+   cmake --build build -j2
+   cmake --install build
+   export PATH="$HOME/.qllvm/bin:$PATH"
+   qllvm --help
+   ```
+
+   如果 CMake 找不到 LLVM/MLIR 或 antlr4-runtime，应按 QLLVM 官方安装文档补充对应版本，而不是随意替换系统 LLVM。
+
+3. 编译 MPI-Q：
+
+   ```bash
+   git clone https://github.com/SchordingersDogCat/MPI-Q.git /tmp/MPI-Q
+   cd /tmp/MPI-Q
+   make PY_DIR=/usr/include/python3.11 \
+        PY_LIB=/usr/lib/x86_64-linux-gnu \
+        LDPYLIBS=-lpython3.11
+   ```
+
+   MPI-Q 仓库提供通信库和示例程序，但没有一个可直接作为本项目 runner 的统一命令。需要根据实验室的量子控制卡/服务端程序，编写一个调用 `MPIQ_Init`、`MPIQ_qasm` 或 `qasm_to_pulse_waveforms` 的 runner，再把它填入 `runtime.mpiq.prepare_command`。
+
+4. 放置并检查真实 QASM：
+
+   项目内提供了最小示例 [programs/bell.qasm](programs/bell.qasm)。复制 [configs/real_toolchain.example.json](configs/real_toolchain.example.json)，将 `program_path`、MPI-Q runner 路径和 Fusion Lab API 地址改成真实值。
+
+5. 执行环境检查：
+
+   ```bash
+   /usr/bin/python3 scripts/check_real_toolchain.py \
+     --config configs/real_toolchain.example.json
+   ```
+
+6. 通过检查后运行：
+
+   ```bash
+   /usr/bin/python3 run_experiment.py \
+     --config configs/real_toolchain.example.json \
+     --output-dir artifacts/real
+   ```
+
+   如果 Fusion Lab 使用的不是本文档中的 JSON 字段，需要在 [qos/executor.py](qos/executor.py) 的 `RealFusionLabExecutor` 中按平台接口调整请求路径、认证和返回字段。
+
 并输出：
 - 可复现实验配置（后端、负载、指标定义）
 - 对照实验报告（默认策略 vs QOS）

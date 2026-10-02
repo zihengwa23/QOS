@@ -12,6 +12,7 @@ class Job:
     depth: int
     shots: int
     deadline_s: float
+    program_path: str | None = None
 
 
 @dataclass(frozen=True)

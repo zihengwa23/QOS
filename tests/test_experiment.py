@@ -5,6 +5,7 @@ import unittest
 
 from qos.config import load_config
 from qos.experiment import run_experiment
+from qos.real_runtime import build_runtime_components
 
 
 class ExperimentTest(unittest.TestCase):
@@ -22,6 +23,10 @@ class ExperimentTest(unittest.TestCase):
         self.assertGreater(result["results"]["default"]["total_jobs"], 0)
         self.assertGreaterEqual(result["results"]["qos"]["success_rate"], 0.0)
         self.assertLessEqual(result["results"]["qos"]["success_rate"], 1.0)
+
+    def test_real_runtime_requires_tool_configuration(self) -> None:
+        with self.assertRaisesRegex(ValueError, "runtime.qllvm.command"):
+            build_runtime_components({"runtime": {"mode": "real"}, "policy": {"compile_reuse_factor": 0.5}})
 
 
 if __name__ == "__main__":

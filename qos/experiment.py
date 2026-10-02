@@ -5,6 +5,7 @@ from typing import Dict, List
 
 from .models import BackendProfile
 from .pipeline import QuantumPipelineSimulator
+from .real_runtime import build_runtime_components
 from .scheduler import DefaultScheduler, QosScheduler
 from .workloads import generate_workloads, group_by_type
 
@@ -24,10 +25,14 @@ def run_experiment(config: Dict) -> Dict:
     jobs = generate_workloads(config, seed=config["seed"])
     by_type = group_by_type(jobs)
     backends = _build_backends(config)
+    compiler, communicator, executor = build_runtime_components(config)
     simulator = QuantumPipelineSimulator(
         backends=backends,
         max_retries=config["platform"]["max_retries"],
         reuse_factor=config["policy"]["compile_reuse_factor"],
+        compiler=compiler,
+        communicator=communicator,
+        executor=executor,
     )
 
     rounds = config["ab_test"]["rounds_per_slot"]

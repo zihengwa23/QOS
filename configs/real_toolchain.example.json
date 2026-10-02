@@ -1,0 +1,80 @@
+{
+  "seed": 42,
+  "toolchain": {
+    "compiler": "QLLVM",
+    "communication": "MPI-Q",
+    "platform": "Fusion Lab"
+  },
+  "runtime": {
+    "mode": "real",
+    "qllvm": {
+      "command": "qllvm",
+      "target_backend": "qasm-backend",
+      "opt_level": 1
+    },
+    "mpiq": {
+      "prepare_command": "mpirun -np 2 ./path/to/mpi_q_runner --program {program} --job {job_id} --shots {shots}",
+      "timeout_s": 300
+    },
+    "fusion_lab": {
+      "submit_url": "https://your-fusion-lab-api.example/jobs",
+      "token": "",
+      "timeout_s": 600
+    }
+  },
+  "platform": {
+    "name": "Fusion Lab (real adapter)",
+    "max_retries": 2,
+    "backends": [
+      {
+        "name": "qasm-backend",
+        "queue_capacity": 1,
+        "queue_delay_base_s": 0.0,
+        "compile_factor": 0.0,
+        "exec_rate": 1.0,
+        "failure_rate": 0.0,
+        "cost_per_second": 0.0,
+        "congestion_sensitivity": 0.0,
+        "calibration_windows": []
+      }
+    ]
+  },
+  "workloads": [
+    {
+      "type": "real_program",
+      "count": 1,
+      "spec": {
+        "qubits_min": 2,
+        "qubits_max": 2,
+        "depth_min": 2,
+        "depth_max": 2,
+        "shots_min": 1024,
+        "shots_max": 1024,
+        "deadline_s": 600,
+        "program_path": "./programs/bell.qasm"
+      }
+    }
+  ],
+  "ab_test": {
+    "strategies": ["default"],
+    "time_slots": [0],
+    "rounds_per_slot": 1
+  },
+  "policy": {
+    "latency_weight": 1.0,
+    "reliability_weight": 0.0,
+    "cost_weight": 0.0,
+    "deadline_weight": 0.0,
+    "congestion_weight": 0.0,
+    "compile_reuse_factor": 1.0
+  },
+  "metric_definitions": {
+    "throughput_jobs_per_s": "completed_jobs / makespan",
+    "avg_queue_wait_s": "average queue waiting time",
+    "success_rate": "successful_jobs / total_jobs",
+    "makespan_s": "max backend finish time",
+    "retry_count": "total retry attempts",
+    "resource_utilization": "total_execute_time / (makespan * backend_count)",
+    "total_cost": "sum((compile_time + execute_time) * backend_cost_rate)"
+  }
+}

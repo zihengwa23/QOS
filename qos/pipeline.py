@@ -54,9 +54,22 @@ class QuantumPipelineSimulator:
             final_result: JobResult | None = None
             while retries <= self.max_retries:
                 backend = scheduler.choose_backend(job, self.backends, state, policy)
-                communication = self.communicator.prepare(backend, state, rng)
                 compilation = self.compiler.compile(job, backend, compile_cache, rng)
-                execution = self.executor.execute(job, backend, communication.queue_pressure, hour_slot, rng)
+                communication = self.communicator.prepare(
+                    backend,
+                    state,
+                    rng,
+                    job=job,
+                    artifact_path=compilation.artifact_path,
+                )
+                execution = self.executor.execute(
+                    job,
+                    backend,
+                    communication.queue_pressure,
+                    hour_slot,
+                    rng,
+                    artifact_path=compilation.artifact_path,
+                )
                 queue_wait = communication.queue_wait_s
                 compile_s = compilation.compile_s
                 execute_s = execution.execute_s

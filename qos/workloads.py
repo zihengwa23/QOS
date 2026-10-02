@@ -18,6 +18,7 @@ def _build_job(rng: random.Random, workload_type: str, index: int, spec: Dict[st
         depth=depth,
         shots=shots,
         deadline_s=deadline_s,
+        program_path=spec.get("program_path"),
     )
 
 

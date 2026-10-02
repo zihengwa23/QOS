@@ -5,6 +5,9 @@
     "communication": "MPI-Q",
     "platform": "Fusion Lab"
   },
+  "runtime": {
+    "mode": "simulated"
+  },
   "platform": {
     "name": "Fusion Lab (simulated batch runtime)",
     "max_retries": 2,
